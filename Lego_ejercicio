@@ -1,0 +1,71 @@
+!pip install mip
+
+from mip import *
+
+## Alternativa simple
+
+m = Model() #Voy a construir un modelo llamado m
+mesas=m.add_var() #mesas es una variable dentro del modelo m
+sillas=m.add_var()
+m.objective = maximize(16*mesas+10*sillas) #Función objetivo para maximizar 
+m.add_constr(2*mesas+sillas<=6) #Restricción1
+m.add_constr(2*mesas+2*sillas<=8) #Restricción2
+status=m.optimize() #resolver el problema y guarda el status de la solución
+print(status)
+print("valor solución: ",m.objective_value) 
+print("sillas: ",sillas.x)
+print("mesas: ",mesas.x)
+
+## Alternativa habitual
+
+### Definir objeto modelo y los datos
+
+modelo = Model()
+
+productos=['mesas','sillas'] #vector de productos
+rProductos = range(len(productos)) #
+piezas=['grande','pequeña'] #vector de piezas
+rPiezas = range(len(piezas))
+uso=[[2,2],[1,2]] #una fila para cada producto y una columna para cada pieza
+# 2 2 (la mesa requiere 2 grandes y 2 pequeñas)
+# 1 2 (la silla requiere 1 grande y 2 pequeñas)
+disponibilidad=[6,8] # 6 grandes, 8 pequeñas
+pv=[16,10] # 16 por cada mesa y 10 por cada silla
+
+
+
+### Definir variables
+
+Vamos a construir un vector de variables
+
+x=[modelo.add_var() for i in rProductos]
+
+### Definir objetivo
+
+Definimos el objetivo como una suma producto
+
+modelo.objective = maximize(xsum(pv[i]*x[i] for i in rProductos))
+
+ # xsum = sumatoria
+ #xsum(pv[i]*x[i] donde pone i pon primero mesas y luego sillas
+ # rProductos ---> mesas y sillas
+ # pv[mesas]*x[mesas] pv[sillas]*x[sillas] y las sumo porque hay un xsum
+
+### Definir restricciones
+
+Hacemos una restricción para cada pieza que mira la disponibilidad
+
+for p in rPiezas: #quiero una restricción para cada pieza
+  # uso*variable <= disponibilidad
+  modelo.add_constr( xsum(uso[i][p]*x[i] for i in rProductos) <= disponibilidad[p])
+
+  #paso 1 construiría una restricción donde p es "grande"
+  #paso 2 construiría una restricción donde p es "pequeña"
+
+### Resolver el problema y obtener los resultados
+
+status=modelo.optimize()
+print(status)
+print("valor solución: ",modelo.objective_value)
+for i in rProductos:
+  print("el producto",productos[i],"se hacen",x[i].x,"unidades")
