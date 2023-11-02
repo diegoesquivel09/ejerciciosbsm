@@ -1,0 +1,76 @@
+
+
+!pip install mip
+
+from mip import *
+
+## Alternativa simple
+
+m = Model() #Voy a construir un modelo llamado m
+ale=m.add_var() #mesas es una variable dentro del modelo m
+lager=m.add_var()
+stout=m.add_var()
+m.objective = maximize(3.5*ale+3*lager+4*stout) #Función objetivo para maximizar
+m.add_constr(4*ale+3*lager+5*stout<=80) #Restricción1
+m.add_constr(ale+lager+stout<=25) #Restricción2
+m.add_constr(2*ale+lager+2*stout<=35) #Restricción5
+status=m.optimize() #resolver el problema y guarda el status de la solución
+print(status)
+print("valor solución: ",m.objective_value)
+print("Ale: ",ale.x)
+print("Lager: ",lager.x)
+print("Stout: ",stout.x)
+
+## Alternativa habitual
+
+### Definir objeto modelo y los datos
+
+modelo = Model()
+
+productos=['ale','lager','stout'] #vector de productos
+rProductos = range(len(productos)) #
+ingredientes=['malta','levadura','lupulo'] #vector de ingredientes
+rIngredientes = range(len(ingredientes))
+uso=[[4,1,2],[3,1,1],[5,1,2]] #una fila para cada producto y una columna para cada pieza
+# 4,1,2 (la ale requiere 4 maltas, 1 levadura y 2 lúpulos)
+# 3 1 1(la ale requiere 3 maltas, 1 levadura y 1 lúpulos)
+# 5 1 2(la ale requiere 5 maltas, 1 levadura y 2 lúpulos)
+disponibilidad=[80,25,35] # 80 maltas, 25 levaduras y 35 lúpulos
+pv=[3.5,3,4] # 3.5 por cada ale, 3 por cada lager y 4 por cada stout
+
+### Definir variables
+
+Vamos a construir un vector de variables
+
+x=[modelo.add_var() for i in rProductos]
+
+### Definir objetivo
+
+Definimos el objetivo como una suma producto
+
+modelo.objective = maximize(xsum(pv[i]*x[i] for i in rProductos))
+
+ # xsum = sumatoria
+ #xsum(pv[i]*x[i] donde pone i pon primero Ales luego Lagers y por último stouts
+ # rProductos ---> Ale, Lager y Stout
+ # pv[mesas]*x[mesas] pv[sillas]*x[sillas] y las sumo porque hay un xsum
+
+### Definir restricciones
+
+Hacemos una restricción para cada pieza que mira la disponibilidad
+
+for p in rIngredientes: #quiero una restricción para cada ingrediente
+  # uso*variable <= disponibilidad
+  modelo.add_constr( xsum(uso[i][p]*x[i] for i in rProductos) <= disponibilidad[p])
+
+  #paso 1 construiría una restricción donde p es "Malta"
+  #paso 2 construiría una restricción donde p es "Levadura"
+  ##paso 3 construiría una restricción donde p es "Lúpulo"
+
+### Resolver el problema y obtener los resultados
+
+status=modelo.optimize()
+print(status)
+print("valor solución: ",modelo.objective_value)
+for i in rProductos:
+  print("De la cerveza",productos[i],"se hacen",round(x[i].x),"unidades")
